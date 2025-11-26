@@ -413,11 +413,19 @@ function updateCharts(analysis = {}) {
     const performanceList = analysis.student_details || analysis.top_students || [];
 
     const scatterData = analysis.performance_points
-        || (performanceList.length ? performanceList.map((student, index) => [
-            index + 1,
-            student.avg_exam_score || student.avg_homework_score || 0,
-            student.student_id || `学生${index + 1}`
-        ]) : null)
+        || (performanceList.length ? performanceList.map((student, index) => {
+            const displayName = student.name
+                || student.student_name
+                || student.student_truename
+                || student.student_id
+                || `学生${index + 1}`;
+
+            return [
+                index + 1,
+                student.avg_exam_score || student.avg_homework_score || 0,
+                displayName
+            ];
+        }) : null)
         || Array.from({ length: 15 }, (_, i) => [i + 1, Math.round(Math.random() * 40) + 60, `学生${i + 1}`]);
 
     const barSource = analysis.resource_usage
@@ -682,12 +690,17 @@ async function analyzeStudentPerformance() {
                 data.top_students.forEach((student, index) => {
                     const homework = student.avg_homework_score > 0 ? `${student.avg_homework_score.toFixed(1)} 分` : '—';
                     const exam = student.avg_exam_score > 0 ? `${student.avg_exam_score.toFixed(1)} 分` : '—';
+                    const displayName = student.name
+                        || student.student_name
+                        || student.student_truename
+                        || student.student_id
+                        || `学生${index + 1}`;
 
                     html += `
                         <div class="stat-card">
                             <div class="stat-rank">NO.${index + 1}</div>
                             <div class="stat-body">
-                                <p class="stat-title">学生 ${student.student_id.substring(0, 8)}...</p>
+                                <p class="stat-title">${displayName}</p>
                                 <p class="stat-sub">作业均分 ${homework} ｜ 考试均分 ${exam}</p>
                             </div>
                         </div>
