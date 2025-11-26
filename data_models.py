@@ -130,6 +130,8 @@ class VideoRecord:
 @dataclass(slots=True)
 class HomeworkRecord:
     resource_id: str
+    record_id: str = ""  # [新增] 对应 JSON 里的 homework_id 或 id
+    title: str = ""      # [新增] 对应 JSON 里的 title (作业名)
     score: float = 0.0
     total_score: float = 0.0
 
@@ -141,11 +143,15 @@ class HomeworkRecord:
         total = max(0.0, _safe_float(raw.get("total_score")))
         score = _safe_float(raw.get("score"))
         
+        # 逻辑：如果总分存在且得分超过总分，修正之
         if total > 0 and score > total:
             score = total
             
         return cls(
             resource_id=str(raw.get("resource_id", "")),
+            # [关键] 保存原始流水号 ID，以便精确查找
+            record_id=str(raw.get("homework_id") or raw.get("id") or ""),
+            title=str(raw.get("title") or "未知作业"),
             score=score,
             total_score=total,
         )
@@ -154,6 +160,8 @@ class HomeworkRecord:
 @dataclass(slots=True)
 class ExamRecord:
     resource_id: str
+    record_id: str = ""  # [新增] 对应 JSON 里的 id
+    title: str = ""      # [新增] 对应 JSON 里的 type (如"普通考试")
     score: float = 0.0
     total_score: float = 0.0
 
@@ -168,8 +176,14 @@ class ExamRecord:
         if total > 0 and score > total:
             score = total
 
+        # JSON 里考试名称通常在 "type" 字段，也可能在 "title"
+        name = raw.get("type") or raw.get("title") or "未知考试"
+
         return cls(
             resource_id=str(raw.get("resource_id", "")),
+            # [关键] 保存原始流水号 ID
+            record_id=str(raw.get("id") or ""),
+            title=str(name),
             score=score,
             total_score=total,
         )
@@ -184,31 +198,33 @@ class AttendanceRecord:
     attend_status: AttendStatus
     check_item_id: str = "" 
     event_time: str = ""
-    name: str = ""  # [新增] 存储 "第1次考勤" 或 "3月8日考勤" 这种名称
+    name: str = ""  # 存储 "第1次考勤" 或 "3月8日考勤" 这种名称
 
     @classmethod
     def from_raw(cls, raw: Dict[str, Any]) -> "AttendanceRecord":
         if not raw:
             return cls(attend_status=AttendStatus.UNKNOWN)
         
-        # 获取时间
+        # ✅ 优先使用 attend_time，其次 start_time 等
         raw_time = (
-            raw.get("check_in_time") 
-            or raw.get("create_time") 
-            or raw.get("start_time") 
-            or raw.get("time") 
+            raw.get("attend_time")        # 真实签到时间（你截图里的 2024-03-08T12:58:58）
+            or raw.get("check_in_time")
+            or raw.get("create_time")
+            or raw.get("start_time")
+            or raw.get("time")
             or ""
         )
 
-        # [新增] 获取考勤名称
+        # 获取考勤名称，比如 "3月8日考勤"
         raw_name = str(raw.get("name") or raw.get("title") or "未知考勤")
         
         return cls(
             attend_status=AttendStatus.from_raw(raw.get("attend_status", "")),
             check_item_id=str(raw.get("check_item_id") or ""),
             event_time=str(raw_time),
-            name=raw_name 
+            name=raw_name
         )
+
 
 
 @dataclass(slots=True)
