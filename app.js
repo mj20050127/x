@@ -428,40 +428,42 @@ function updateCharts(analysis = {}) {
         }) : null)
         || Array.from({ length: 15 }, (_, i) => [i + 1, Math.round(Math.random() * 40) + 60, `学生${i + 1}`]);
 
-    const barSource = analysis.resource_usage
-        || (analysis.resources && analysis.resources.top_used)
-        || [];
+    // 资源饼图：使用后端 compute_overview 提供的 resource_stats
+    const resourceStats = analysis.resource_stats || {};
+    const resourcePieData = Object.entries(resourceStats).map(([type, count]) => ({
+        name: type || '资源',
+        value: Number(count) || 0
+    }));
 
-    const barData = (barSource || []).slice(0, 10).map(item => ({
+    // 资源热度柱状：按照 view_times 排序，展示真实访问量
+    const resourceTypes = analysis.resource_types || {};
+    const resourceList = Object.values(resourceTypes).flat().map(item => ({
         name: item.title || item.name || '资源',
-        value: item.views || item.popularity || item.students_count || 0
+        value: Number(item.view_times) || Number(item.download_times) || 0
     }));
 
+    let barData = resourceList
+        .filter(item => item.name)
+        .sort((a, b) => (b.value || 0) - (a.value || 0))
+        .slice(0, 10);
+
+    // 如果没有访问数据，则退化为按资源类型的数量展示
     if (barData.length === 0) {
-        barData.push({ name: '视频', value: 120 });
-        barData.push({ name: '作业', value: 98 });
-        barData.push({ name: '讲义', value: 76 });
+        barData = Object.entries(resourceStats).map(([type, count]) => ({
+            name: type || '资源',
+            value: Number(count) || 0
+        }));
     }
 
-    const resourceBreakdown = analysis.resource_breakdown
-        || (analysis.resources && analysis.resources.by_type)
-        || [];
-
-    const resourcePieData = (resourceBreakdown || []).map(item => ({
-        name: item.type || item.name || '资源',
-        value: item.count || item.value || 0
-    }));
-
-    if (resourcePieData.length === 0) {
-        resourcePieData.push({ name: '视频', value: 40 });
-        resourcePieData.push({ name: '作业', value: 25 });
-        resourcePieData.push({ name: '测验', value: 20 });
-        resourcePieData.push({ name: '文档', value: 15 });
-    }
-
-    const behaviorStats = analysis.behavior_overview || {
+    // 学习行为柱状：直接使用后端统计的真实计数
+    const behaviorStats = {
         categories: ['出勤', '视频', '作业', '考试'],
-        values: [80, 120, 95, 70]
+        values: [
+            Number(analysis.attendance_count) || 0,
+            Number(analysis.video_count) || 0,
+            Number(analysis.homework_count) || 0,
+            Number(analysis.exam_count) || 0
+        ]
     };
 
     renderResourcePie(resourcePieData);
