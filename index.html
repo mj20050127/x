@@ -48,6 +48,10 @@
                                     <option value="data">数据科学</option>
                                     <option value="system">系统网络</option>
                                     <option value="other">其他</option>
+                                <select id="course-filter">
+                                    <option value="all">全部学期</option>
+                                    <option value="spring">春季学期</option>
+                                    <option value="fall">秋季学期</option>
                                 </select>
                                 <select id="course-sort">
                                     <option value="default">默认排序</option>
@@ -56,6 +60,17 @@
                                     <option value="active">按活跃度</option>
                                 </select>
                             </div>
+                                    <option value="active">按活跃度</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="category-tabs">
+                            <button class="category-tab active" data-category="all">全部课程</button>
+                            <button class="category-tab" data-category="ai">人工智能</button>
+                            <button class="category-tab" data-category="programming">编程开发</button>
+                            <button class="category-tab" data-category="data">数据科学</button>
+                            <button class="category-tab" data-category="system">系统网络</button>
+                            <button class="category-tab" data-category="other">其他</button>
                         </div>
                         <div id="course-list-container" class="course-list-container">
                             <div id="course-list" class="course-list"></div>
@@ -68,6 +83,7 @@
                                 <p class="eyebrow">课程详情</p>
                                 <h3 id="course-name">请选择课程</h3>
                                 <p class="subtitle" id="course-meta">教师与课程基础信息</p>
+                                <p class="subtitle" id="course-meta">开课时间 · 班级信息待加载</p>
                             </div>
                             <div class="course-status">
                                 <span class="status-chip" id="course-status">状态：未选择</span>
@@ -277,6 +293,7 @@
 
                         <div id="tab-chat" class="tab-content">
                             <p class="muted">AI 助手支持滚动查看上下文，可在同一页面追问并联动图表与数据。</p>
+                            <p class="muted">AI 助手固定在右侧，可在同一页面追问并联动图表与数据。</p>
                         </div>
                     </section>
                 </section>
