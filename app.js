@@ -408,11 +408,11 @@ function setKpiValue(id, value) {
     el.textContent = (value === undefined || value === null || value === '') ? '--' : value;
 }
 
-// 构建与更新 ECharts
-function updateCharts(analysis = {}) {
+// 构建图表数据（概览与详情共享）
+function buildScatterData(analysis = {}) {
     const performanceList = analysis.student_details || analysis.top_students || [];
 
-    const scatterData = analysis.performance_points
+    return analysis.performance_points
         || (performanceList.length ? performanceList.map((student, index) => {
             const displayName = student.name
                 || student.student_name
@@ -427,15 +427,23 @@ function updateCharts(analysis = {}) {
             ];
         }) : null)
         || Array.from({ length: 15 }, (_, i) => [i + 1, Math.round(Math.random() * 40) + 60, `学生${i + 1}`]);
+}
 
-    // 资源饼图：使用后端 compute_overview 提供的 resource_stats
+function buildResourceBarData(analysis = {}) {
+    // 优先使用资源使用分析结果
+    if (Array.isArray(analysis.resource_usage) && analysis.resource_usage.length) {
+        return analysis.resource_usage
+            .map(item => ({
+                name: item.title || item.name || '资源',
+                value: Number(item.popularity) || Number(item.views) || Number(item.downloads) || 0
+            }))
+            .filter(item => item.name)
+            .sort((a, b) => (b.value || 0) - (a.value || 0))
+            .slice(0, 10);
+    }
+
+    // 兼容 compute_overview 返回的 resource_types/resource_stats
     const resourceStats = analysis.resource_stats || {};
-    const resourcePieData = Object.entries(resourceStats).map(([type, count]) => ({
-        name: type || '资源',
-        value: Number(count) || 0
-    }));
-
-    // 资源热度柱状：按照 view_times 排序，展示真实访问量
     const resourceTypes = analysis.resource_types || {};
     const resourceList = Object.values(resourceTypes).flat().map(item => ({
         name: item.title || item.name || '资源',
@@ -447,13 +455,24 @@ function updateCharts(analysis = {}) {
         .sort((a, b) => (b.value || 0) - (a.value || 0))
         .slice(0, 10);
 
-    // 如果没有访问数据，则退化为按资源类型的数量展示
     if (barData.length === 0) {
         barData = Object.entries(resourceStats).map(([type, count]) => ({
             name: type || '资源',
             value: Number(count) || 0
         }));
     }
+
+    return barData;
+}
+
+// 构建与更新 ECharts
+function updateCharts(analysis = {}) {
+    // 资源饼图：使用后端 compute_overview 提供的 resource_stats
+    const resourceStats = analysis.resource_stats || {};
+    const resourcePieData = Object.entries(resourceStats).map(([type, count]) => ({
+        name: type || '资源',
+        value: Number(count) || 0
+    }));
 
     // 学习行为柱状：直接使用后端统计的真实计数
     const behaviorStats = {
@@ -468,8 +487,8 @@ function updateCharts(analysis = {}) {
 
     renderResourcePie(resourcePieData);
     renderBehaviorChart(behaviorStats);
-    renderScatterChart(scatterData);
-    renderBarChart(barData);
+    renderScatterChart(buildScatterData(analysis));
+    renderBarChart(buildResourceBarData(analysis));
 }
 
 function renderScatterChart(data) {
@@ -712,6 +731,9 @@ async function analyzeStudentPerformance() {
             }
 
             resultBox.innerHTML = html || '<p>暂无数据</p>';
+
+            // 学生表现散点图：使用后端的 student_details/top_students 更新详情页图表
+            renderScatterChart(buildScatterData(data));
         } else {
             resultBox.innerHTML = `分析失败: ${result.error}`;
         }
@@ -799,6 +821,9 @@ async function analyzeResourceUsage() {
             }
 
             resultBox.innerHTML = html || '<p>暂无数据</p>';
+
+            // 资源热度柱状图：使用资源使用分析结果更新详情页图表
+            renderBarChart(buildResourceBarData(data));
 
         } else {
             resultBox.innerHTML = `<div style="color: red;">分析失败: ${result.error}</div>`;
