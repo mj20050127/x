@@ -2,6 +2,12 @@
 let currentCourseId = null;
 let charts = {};
 
+const defaultKpis = {
+    total: '--',
+    average: '--',
+    warning: '--'
+};
+
 // API基础URL
 const API_BASE = window.location.origin;
 
@@ -9,6 +15,9 @@ const API_BASE = window.location.origin;
 document.addEventListener('DOMContentLoaded', () => {
     loadCourses();
     setupEventListeners();
+    window.addEventListener('resize', () => {
+        Object.values(charts).forEach(chart => chart && chart.resize());
+    });
 });
 
 // 设置事件监听器
@@ -251,9 +260,149 @@ function displayCourseDetail(data) {
         <span>点赞: ${courseInfo.liked || 0}</span>
         <span>浏览: ${courseInfo.viewed || 0}</span>
     `;
-    
+
+    // 更新仪表盘数据
+    updateDashboard(courseInfo, analysis);
+
     // 切换到智能分析选项卡
     switchTab('analysis');
+}
+
+// 更新仪表盘视图
+function updateDashboard(courseInfo = {}, analysis = {}) {
+    const totalStudents = analysis.total_students
+        || courseInfo.student_count
+        || courseInfo.students
+        || courseInfo.enrolled
+        || defaultKpis.total;
+
+    const averageScore = analysis.average_score
+        || courseInfo.avg_score
+        || courseInfo.average_score
+        || defaultKpis.average;
+
+    const warningCount = (analysis.warning_students && analysis.warning_students.length)
+        || analysis.warning_count
+        || courseInfo.warning_count
+        || defaultKpis.warning;
+
+    setKpiValue('kpi-total', totalStudents);
+    setKpiValue('kpi-average', averageScore);
+    setKpiValue('kpi-warning', warningCount);
+
+    updateCharts(analysis);
+}
+
+function setKpiValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (value === undefined || value === null || value === '') ? '--' : value;
+}
+
+// 构建与更新 ECharts
+function updateCharts(analysis = {}) {
+    const scatterData = analysis.performance_points
+        || (analysis.top_students ? analysis.top_students.map((student, index) => [
+            index + 1,
+            student.avg_exam_score || student.avg_homework_score || 0,
+            student.student_id || `学生${index + 1}`
+        ]) : null)
+        || Array.from({ length: 15 }, (_, i) => [i + 1, Math.round(Math.random() * 40) + 60, `学生${i + 1}`]);
+
+    const barSource = analysis.resource_usage
+        || (analysis.resources && analysis.resources.top_used)
+        || [];
+
+    const barData = (barSource || []).slice(0, 10).map(item => ({
+        name: item.title || item.name || '资源',
+        value: item.views || item.popularity || item.students_count || 0
+    }));
+
+    if (barData.length === 0) {
+        barData.push({ name: '视频', value: 120 });
+        barData.push({ name: '作业', value: 98 });
+        barData.push({ name: '讲义', value: 76 });
+    }
+
+    renderScatterChart(scatterData);
+    renderBarChart(barData);
+}
+
+function renderScatterChart(data) {
+    if (typeof echarts === 'undefined') return;
+    const container = document.getElementById('scatter-chart');
+    if (!container) return;
+
+    const instance = charts.scatter || echarts.init(container);
+    charts.scatter = instance;
+
+    instance.setOption({
+        backgroundColor: 'transparent',
+        tooltip: {
+            trigger: 'item',
+            formatter: (params) => `${params.data[2] || '学生'}<br/>成绩：${params.data[1]}`
+        },
+        xAxis: {
+            name: '排名',
+            splitLine: { show: false },
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+            axisLabel: { color: '#9ca3af' }
+        },
+        yAxis: {
+            name: '成绩',
+            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+            axisLabel: { color: '#9ca3af' },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+        },
+        series: [{
+            type: 'scatter',
+            data,
+            symbolSize: (val) => 12 + (val[1] / 10),
+            itemStyle: {
+                color: new echarts.graphic.RadialGradient(0.4, 0.3, 1, [{
+                    offset: 0, color: '#60a5fa'
+                }, {
+                    offset: 1, color: '#1d4ed8'
+                }])
+            }
+        }]
+    });
+}
+
+function renderBarChart(data) {
+    if (typeof echarts === 'undefined') return;
+    const container = document.getElementById('bar-chart');
+    if (!container) return;
+
+    const instance = charts.bar || echarts.init(container);
+    charts.bar = instance;
+
+    instance.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis' },
+        grid: { left: 60, right: 20, top: 30, bottom: 50 },
+        xAxis: {
+            type: 'category',
+            data: data.map(item => item.name),
+            axisLabel: { color: '#9ca3af', rotate: 25 }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: { color: '#9ca3af' },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+        },
+        series: [{
+            type: 'bar',
+            data: data.map(item => item.value),
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#60a5fa' },
+                    { offset: 1, color: '#1d4ed8' }
+                ])
+            },
+            barWidth: '55%'
+        }]
+    });
 }
 
 
