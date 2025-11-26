@@ -6,26 +6,10 @@
     <title>AI教学分析助手</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="app-shell">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-icon">AI</div>
-                <div>
-                    <h1>教学仪表盘</h1>
-                    <p>数据驱动的课堂洞察</p>
-                </div>
-            </div>
-            <nav class="nav">
-                <button class="nav-item active" data-target="courses">课程列表</button>
-                <button class="nav-item" data-target="portrait">学生画像</button>
-                <button class="nav-item" data-target="resources">资源分析</button>
-                <button class="nav-item" data-target="assistant">AI 助手</button>
-            </nav>
-            <div class="nav-hint">选择课程后，仪表盘将自动刷新关键指标与图表。</div>
-        </aside>
-
         <div class="workspace">
             <header class="hero">
                 <div>
@@ -33,37 +17,21 @@
                     <h2>AI教学分析助手</h2>
                     <p class="subtitle">基于水杉平台教学行为数据的智能分析系统</p>
                 </div>
-                <div class="hero-actions">
-                    <span class="badge">Dashboard 模式</span>
+                <div class="hero-visual">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80" alt="课堂洞察插图" />
                 </div>
             </header>
 
             <main>
-                <section class="kpi-row" id="kpi-row">
-                    <div class="kpi-card">
-                        <p class="kpi-label">总人数</p>
-                        <p class="kpi-value" id="kpi-total">--</p>
-                        <p class="kpi-desc">选定课程的注册学生数</p>
-                    </div>
-                    <div class="kpi-card">
-                        <p class="kpi-label">平均分</p>
-                        <p class="kpi-value" id="kpi-average">--</p>
-                        <p class="kpi-desc">课程整体的学习成绩</p>
-                    </div>
-                    <div class="kpi-card warning">
-                        <p class="kpi-label">预警人数</p>
-                        <p class="kpi-value" id="kpi-warning">--</p>
-                        <p class="kpi-desc">需要关注的学生数量</p>
-                    </div>
-                </section>
-
-                <section class="content-grid">
+                <section class="content-layout">
                     <section class="card-panel" id="module-courses">
                         <div class="panel-header">
                             <div>
                                 <p class="eyebrow">课程导航</p>
                                 <h3>选择课程以查看仪表盘</h3>
                             </div>
+                        </div>
+                        <div class="filter-row">
                             <div class="search-box">
                                 <input type="text" id="course-search" placeholder="搜索课程名称..." />
                                 <button id="search-btn" class="search-icon-btn" aria-label="搜索课程">
@@ -72,14 +40,22 @@
                                     </svg>
                                 </button>
                             </div>
-                        </div>
-                        <div class="category-tabs">
-                            <button class="category-tab active" data-category="all">全部课程</button>
-                            <button class="category-tab" data-category="ai">人工智能</button>
-                            <button class="category-tab" data-category="programming">编程开发</button>
-                            <button class="category-tab" data-category="data">数据科学</button>
-                            <button class="category-tab" data-category="system">系统网络</button>
-                            <button class="category-tab" data-category="other">其他</button>
+                            <div class="controls">
+                                <select id="category-select">
+                                    <option value="all">全部课程</option>
+                                    <option value="ai">人工智能</option>
+                                    <option value="programming">编程开发</option>
+                                    <option value="data">数据科学</option>
+                                    <option value="system">系统网络</option>
+                                    <option value="other">其他</option>
+                                </select>
+                                <select id="course-sort">
+                                    <option value="default">默认排序</option>
+                                    <option value="students">按学生数</option>
+                                    <option value="likes">按点赞数</option>
+                                    <option value="active">按活跃度</option>
+                                </select>
+                            </div>
                         </div>
                         <div id="course-list-container" class="course-list-container">
                             <div id="course-list" class="course-list"></div>
@@ -87,43 +63,84 @@
                     </section>
 
                     <section id="course-detail" class="card-panel course-detail hidden">
-                        <div class="panel-header">
+                        <div class="panel-header course-head">
                             <div>
                                 <p class="eyebrow">课程详情</p>
                                 <h3 id="course-name">请选择课程</h3>
+                                <p class="subtitle" id="course-meta">教师与课程基础信息</p>
                             </div>
-                            <div class="course-stats" id="course-stats"></div>
+                            <div class="course-status">
+                                <span class="status-chip" id="course-status">状态：未选择</span>
+                                <div class="course-stats" id="course-stats"></div>
+                            </div>
                         </div>
 
+                        <section class="kpi-row" id="kpi-row">
+                            <div class="kpi-card">
+                                <p class="kpi-label">选课学生数</p>
+                                <p class="kpi-value" id="kpi-total">--</p>
+                                <p class="kpi-desc">注册学生总量</p>
+                            </div>
+                            <div class="kpi-card">
+                                <p class="kpi-label">资源数量</p>
+                                <p class="kpi-value" id="kpi-resources">--</p>
+                                <p class="kpi-desc">视频 / 文档 / 测验等</p>
+                            </div>
+                            <div class="kpi-card">
+                                <p class="kpi-label">学习记录</p>
+                                <p class="kpi-value" id="kpi-learning">--</p>
+                                <p class="kpi-desc">视频学习与课件浏览</p>
+                            </div>
+                            <div class="kpi-card">
+                                <p class="kpi-label">作业提交</p>
+                                <p class="kpi-value" id="kpi-assignments">--</p>
+                                <p class="kpi-desc">提交次数与覆盖率</p>
+                            </div>
+                            <div class="kpi-card">
+                                <p class="kpi-label">考勤次数</p>
+                                <p class="kpi-value" id="kpi-attendance">--</p>
+                                <p class="kpi-desc">签到与缺勤统计</p>
+                            </div>
+                            <div class="kpi-card warning">
+                                <p class="kpi-label">风险预警</p>
+                                <p class="kpi-value" id="kpi-warning">--</p>
+                                <p class="kpi-desc">需关注学生 / 风险点</p>
+                            </div>
+                        </section>
+
+                        <section class="overview-grid">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <div>
+                                        <p class="eyebrow">资源类型分布</p>
+                                        <h4>资源使用概览</h4>
+                                    </div>
+                                    <span class="tag">总览</span>
+                                </div>
+                                <div id="resource-pie" class="chart-area"></div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <div>
+                                        <p class="eyebrow">学习行为</p>
+                                        <h4>出勤 / 作业 / 考试</h4>
+                                    </div>
+                                    <span class="tag">趋势</span>
+                                </div>
+                                <div id="behavior-chart" class="chart-area"></div>
+                            </div>
+                        </section>
+
                         <div class="tabs">
-                            <button class="tab-btn active" data-tab="analysis">智能分析</button>
+                            <button class="tab-btn active" data-tab="overview">概览</button>
+                            <button class="tab-btn" data-tab="student">学生表现</button>
+                            <button class="tab-btn" data-tab="resources">资源使用</button>
+                            <button class="tab-btn" data-tab="attendance">考勤与课堂行为</button>
+                            <button class="tab-btn" data-tab="exams">考试与成绩</button>
                             <button class="tab-btn" data-tab="chat">AI助手</button>
                         </div>
 
-                        <div id="tab-analysis" class="tab-content active">
-                            <div class="chart-grid">
-                                <div class="chart-card">
-                                    <div class="chart-header">
-                                        <div>
-                                            <p class="eyebrow">成绩分布</p>
-                                            <h4>学生表现散点</h4>
-                                        </div>
-                                        <span class="tag">ECharts</span>
-                                    </div>
-                                    <div id="scatter-chart" class="chart-area"></div>
-                                </div>
-                                <div class="chart-card">
-                                    <div class="chart-header">
-                                        <div>
-                                            <p class="eyebrow">资源参与度</p>
-                                            <h4>资源热度柱状</h4>
-                                        </div>
-                                        <span class="tag">ECharts</span>
-                                    </div>
-                                    <div id="bar-chart" class="chart-area"></div>
-                                </div>
-                            </div>
-
+                        <div id="tab-overview" class="tab-content active">
                             <div class="detail-grid">
                                 <div class="detail-card">
                                     <div class="detail-header">
@@ -138,12 +155,62 @@
                                 <div class="detail-card">
                                     <div class="detail-header">
                                         <div>
+                                            <p class="eyebrow">课堂温度</p>
+                                            <h4>活跃度速览</h4>
+                                        </div>
+                                        <span class="pill">近期趋势</span>
+                                    </div>
+                                    <div id="activity-snapshot" class="result-box muted">选择课程后将展示活跃度与风险点。</div>
+                                </div>
+                                <div class="detail-card wide">
+                                    <div class="detail-header">
+                                        <div>
+                                            <p class="eyebrow">教学提醒</p>
+                                            <h4>AI生成的关键提示</h4>
+                                        </div>
+                                        <span class="pill pill-soft">自动</span>
+                                    </div>
+                                    <div id="overview-insights" class="result-box muted">可结合 AI 问答查看风险点与改进建议。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-student" class="tab-content">
+                            <div class="chart-grid">
+                                <div class="chart-card">
+                                    <div class="chart-header">
+                                        <div>
+                                            <p class="eyebrow">成绩分布</p>
+                                            <h4>学生表现散点</h4>
+                                        </div>
+                                        <span class="tag">ECharts</span>
+                                    </div>
+                                    <div id="scatter-chart" class="chart-area"></div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-header">
+                                        <div>
                                             <p class="eyebrow">学生表现</p>
                                             <h4>表现分析</h4>
                                         </div>
                                         <button id="analyze-performance-btn" class="btn-primary">分析学生表现</button>
                                     </div>
                                     <div id="performance-analysis-result" class="result-box"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-resources" class="tab-content">
+                            <div class="chart-grid">
+                                <div class="chart-card">
+                                    <div class="chart-header">
+                                        <div>
+                                            <p class="eyebrow">资源参与度</p>
+                                            <h4>资源热度柱状</h4>
+                                        </div>
+                                        <span class="tag">ECharts</span>
+                                    </div>
+                                    <div id="bar-chart" class="chart-area"></div>
                                 </div>
                                 <div class="detail-card wide">
                                     <div class="detail-header">
@@ -158,8 +225,58 @@
                             </div>
                         </div>
 
+                        <div id="tab-attendance" class="tab-content">
+                            <div class="detail-grid">
+                                <div class="detail-card">
+                                    <div class="detail-header">
+                                        <div>
+                                            <p class="eyebrow">出勤概览</p>
+                                            <h4>缺勤与签到</h4>
+                                        </div>
+                                        <span class="pill">课堂</span>
+                                    </div>
+                                    <div id="attendance-spotlight" class="result-box muted">AI 回答将挂接缺勤名单与课程活跃度。</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-header">
+                                        <div>
+                                            <p class="eyebrow">课堂行为</p>
+                                            <h4>互动 &amp; 讨论</h4>
+                                        </div>
+                                        <span class="pill">实时</span>
+                                    </div>
+                                    <div id="behavior-highlight" class="result-box muted">支持通过 AI 追问课堂互动亮点。</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="tab-exams" class="tab-content">
+                            <div class="detail-grid">
+                                <div class="detail-card">
+                                    <div class="detail-header">
+                                        <div>
+                                            <p class="eyebrow">考试场次</p>
+                                            <h4>成绩分布</h4>
+                                        </div>
+                                        <span class="pill">评估</span>
+                                    </div>
+                                    <div id="exam-overview" class="result-box muted">加载课程后将展示考试统计和风险预警。</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-header">
+                                        <div>
+                                            <p class="eyebrow">作业与测验</p>
+                                            <h4>提交与通过</h4>
+                                        </div>
+                                        <span class="pill">作业</span>
+                                    </div>
+                                    <div id="assessment-spotlight" class="result-box muted">结合作业提交率与成绩分布定位问题学生。</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="tab-chat" class="tab-content">
-                            <p class="muted">AI 助手已固定在右侧浮窗，可随时针对当前数据提问。</p>
+                            <p class="muted">AI 助手支持滚动查看上下文，可在同一页面追问并联动图表与数据。</p>
                         </div>
                     </section>
                 </section>
@@ -171,11 +288,11 @@
                 <div>
                     <p class="eyebrow">AI 助手</p>
                     <h4>针对当前课程的数据提问</h4>
+                    <p class="context-tip" id="assistant-context">当前未选择课程</p>
                 </div>
                 <div class="assistant-status">实时</div>
             </div>
             <div class="chat-container">
-                <div id="chat-messages" class="chat-messages"></div>
                 <div class="chat-suggestions">
                     <h4>常见问题：</h4>
                     <div class="suggestion-tags">
@@ -185,10 +302,13 @@
                         <span class="suggestion-tag" data-question="第1周有哪些学习内容？">第1周内容</span>
                         <span class="suggestion-tag" data-question="视频观看情况如何？">视频统计</span>
                         <span class="suggestion-tag" data-question="作业提交情况如何？">作业统计</span>
+                        <span class="suggestion-tag" data-question="3 月 8 日缺勤有谁？">缺勤名单</span>
+                        <span class="suggestion-tag" data-question="挂科风险最高的前 5 个学生">风险学生</span>
                     </div>
                 </div>
+                <div id="chat-messages" class="chat-messages"></div>
                 <div class="chat-input-box">
-                    <input type="text" id="chat-input" placeholder="输入您的问题，例如：这门课程有多少学生？第1周有哪些资源？" />
+                    <input type="text" id="chat-input" placeholder="输入您的问题，例如：3 月 8 日缺勤有谁？" />
                     <button id="send-btn" class="btn-primary">发送</button>
                 </div>
             </div>
