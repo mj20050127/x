@@ -1,10 +1,14 @@
 // 全局变量
 let currentCourseId = null;
+let currentTab = 'overview';
 let charts = {};
 
 const defaultKpis = {
     total: '--',
-    average: '--',
+    resources: '--',
+    learning: '--',
+    assignments: '--',
+    attendance: '--',
     warning: '--'
 };
 
@@ -108,9 +112,20 @@ function setupEventListeners() {
                     course.course_name.toLowerCase().includes(searchTerm.toLowerCase())
                 );
             }
-            
+
             displayCourses(courses, currentCategory);
         });
+    });
+
+    // 过滤与排序
+    document.getElementById('course-filter')?.addEventListener('change', (e) => {
+        currentFilter = e.target.value;
+        displayCourses(allCourses, currentCategory);
+    });
+
+    document.getElementById('course-sort')?.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        displayCourses(allCourses, currentCategory);
     });
 }
 
@@ -179,24 +194,39 @@ function categorizeCourse(courseName) {
 // 显示课程列表（支持分类）
 let allCourses = [];
 let currentCategory = 'all';
+let currentFilter = 'all';
+let currentSort = 'default';
 
 function displayCourses(courses, category = 'all') {
     const courseList = document.getElementById('course-list');
     courseList.innerHTML = '';
-    
+
     if (!courses || courses.length === 0) {
         courseList.innerHTML = '<div class="empty-state"><p>未找到课程</p></div>';
         return;
     }
-    
+
     // 按分类过滤
-    let filteredCourses = courses;
+    let filteredCourses = [...courses];
     if (category !== 'all') {
-        filteredCourses = courses.filter(course => categorizeCourse(course.course_name) === category);
+        filteredCourses = filteredCourses.filter(course => categorizeCourse(course.course_name) === category);
     }
-    
+
+    // 简单学期过滤（如果有相关字段）
+    if (currentFilter !== 'all') {
+        filteredCourses = filteredCourses.filter(course => (course.semester || '').toLowerCase().includes(currentFilter));
+    }
+
+    // 排序
+    if (currentSort === 'students') {
+        filteredCourses.sort((a, b) => (b.student_count || 0) - (a.student_count || 0));
+    } else if (currentSort === 'active') {
+        const getActiveScore = (item) => (item.viewed || 0) + (item.liked || 0);
+        filteredCourses.sort((a, b) => getActiveScore(b) - getActiveScore(a));
+    }
+
     if (filteredCourses.length === 0) {
-        courseList.innerHTML = '<div class="empty-state"><p>该分类下暂无课程</p></div>';
+        courseList.innerHTML = '<div class="empty-state"><p>未找到匹配课程</p></div>';
         return;
     }
     
@@ -250,10 +280,18 @@ async function loadCourseDetail(courseId) {
 function displayCourseDetail(data) {
     const courseInfo = data.course_info || {};
     const analysis = data.analysis || {};
-    
+
     // 更新标题
-    document.getElementById('course-name').textContent = analysis.course_name || '课程详情';
-    
+    const courseName = analysis.course_name || courseInfo.course_name || '课程详情';
+    document.getElementById('course-name').textContent = courseName;
+
+    // 更新课程元信息
+    const metaParts = [];
+    if (courseInfo.start_time || courseInfo.start_date) metaParts.push(`开课：${courseInfo.start_time || courseInfo.start_date}`);
+    if (courseInfo.class_name || courseInfo.class) metaParts.push(`班级：${courseInfo.class_name || courseInfo.class}`);
+    if (courseInfo.teacher) metaParts.push(`教师：${courseInfo.teacher}`);
+    document.getElementById('course-meta').textContent = metaParts.join(' · ') || '开课时间 · 班级信息待加载';
+
     // 更新课程统计信息
     const courseStats = document.getElementById('course-stats');
     courseStats.innerHTML = `
@@ -261,11 +299,40 @@ function displayCourseDetail(data) {
         <span>浏览: ${courseInfo.viewed || 0}</span>
     `;
 
+    const warningCount = (analysis.warning_students && analysis.warning_students.length)
+        || analysis.warning_count
+        || 0;
+    const statusText = warningCount > 5 ? '状态：需关注' : warningCount > 0 ? '状态：有风险点' : '状态：正常';
+    const statusEl = document.getElementById('course-status');
+    statusEl.textContent = statusText;
+    statusEl.classList.remove('attention', 'alert');
+    if (warningCount > 5) {
+        statusEl.classList.add('alert');
+    } else if (warningCount > 0) {
+        statusEl.classList.add('attention');
+    }
+
     // 更新仪表盘数据
     updateDashboard(courseInfo, analysis);
 
-    // 切换到智能分析选项卡
-    switchTab('analysis');
+    // 总览文案
+    const overviewInsights = document.getElementById('overview-insights');
+    if (analysis.key_insights) {
+        overviewInsights.innerHTML = analysis.key_insights.replace(/\n/g, '<br>');
+    } else {
+        overviewInsights.textContent = '可结合 AI 问答查看风险点与改进建议。';
+    }
+
+    const activitySnapshot = document.getElementById('activity-snapshot');
+    if (analysis.activity_trends) {
+        activitySnapshot.innerHTML = analysis.activity_trends.replace(/\n/g, '<br>');
+    } else {
+        activitySnapshot.textContent = '选择课程后将展示活跃度与风险点。';
+    }
+
+    // 切换到概览选项卡
+    switchTab('overview');
+    updateAssistantContext();
 }
 
 // 更新仪表盘视图
@@ -276,10 +343,25 @@ function updateDashboard(courseInfo = {}, analysis = {}) {
         || courseInfo.enrolled
         || defaultKpis.total;
 
-    const averageScore = analysis.average_score
-        || courseInfo.avg_score
-        || courseInfo.average_score
-        || defaultKpis.average;
+    const resourceCount = analysis.resource_count
+        || (analysis.resources && analysis.resources.total)
+        || courseInfo.resource_count
+        || defaultKpis.resources;
+
+    const learningRecords = analysis.video_records
+        || analysis.learning_records
+        || courseInfo.video_count
+        || defaultKpis.learning;
+
+    const assignmentCount = analysis.homework_submissions
+        || analysis.assignment_count
+        || courseInfo.homework_count
+        || defaultKpis.assignments;
+
+    const attendanceCount = analysis.attendance_sessions
+        || analysis.attendance_count
+        || courseInfo.attendance_count
+        || defaultKpis.attendance;
 
     const warningCount = (analysis.warning_students && analysis.warning_students.length)
         || analysis.warning_count
@@ -287,7 +369,10 @@ function updateDashboard(courseInfo = {}, analysis = {}) {
         || defaultKpis.warning;
 
     setKpiValue('kpi-total', totalStudents);
-    setKpiValue('kpi-average', averageScore);
+    setKpiValue('kpi-resources', resourceCount);
+    setKpiValue('kpi-learning', learningRecords);
+    setKpiValue('kpi-assignments', assignmentCount);
+    setKpiValue('kpi-attendance', attendanceCount);
     setKpiValue('kpi-warning', warningCount);
 
     updateCharts(analysis);
@@ -324,6 +409,29 @@ function updateCharts(analysis = {}) {
         barData.push({ name: '讲义', value: 76 });
     }
 
+    const resourceBreakdown = analysis.resource_breakdown
+        || (analysis.resources && analysis.resources.by_type)
+        || [];
+
+    const resourcePieData = (resourceBreakdown || []).map(item => ({
+        name: item.type || item.name || '资源',
+        value: item.count || item.value || 0
+    }));
+
+    if (resourcePieData.length === 0) {
+        resourcePieData.push({ name: '视频', value: 40 });
+        resourcePieData.push({ name: '作业', value: 25 });
+        resourcePieData.push({ name: '测验', value: 20 });
+        resourcePieData.push({ name: '文档', value: 15 });
+    }
+
+    const behaviorStats = analysis.behavior_overview || {
+        categories: ['出勤', '视频', '作业', '考试'],
+        values: [80, 120, 95, 70]
+    };
+
+    renderResourcePie(resourcePieData);
+    renderBehaviorChart(behaviorStats);
     renderScatterChart(scatterData);
     renderBarChart(barData);
 }
@@ -398,6 +506,77 @@ function renderBarChart(data) {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     { offset: 0, color: '#60a5fa' },
                     { offset: 1, color: '#1d4ed8' }
+                ])
+            },
+            barWidth: '55%'
+        }]
+    });
+}
+
+function renderResourcePie(data) {
+    if (typeof echarts === 'undefined') return;
+    const container = document.getElementById('resource-pie');
+    if (!container) return;
+
+    const instance = charts.resourcePie || echarts.init(container);
+    charts.resourcePie = instance;
+
+    instance.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'item' },
+        legend: {
+            orient: 'vertical',
+            left: 'left',
+            textStyle: { color: '#9ca3af' }
+        },
+        series: [{
+            name: '资源',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#0b1223',
+                borderWidth: 2
+            },
+            label: { color: '#e5e7eb' },
+            data
+        }]
+    });
+}
+
+function renderBehaviorChart(stats) {
+    if (typeof echarts === 'undefined') return;
+    const container = document.getElementById('behavior-chart');
+    if (!container) return;
+
+    const instance = charts.behavior || echarts.init(container);
+    charts.behavior = instance;
+
+    const categories = stats.categories || (Array.isArray(stats) ? stats.map(item => item.name || '指标') : []);
+    const values = stats.values || (Array.isArray(stats) ? stats.map(item => item.value || 0) : []);
+
+    instance.setOption({
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis' },
+        grid: { left: 40, right: 20, top: 30, bottom: 40 },
+        xAxis: {
+            type: 'category',
+            data: categories,
+            axisLabel: { color: '#9ca3af' }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: { color: '#9ca3af' },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+        },
+        series: [{
+            type: 'bar',
+            data: values,
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#34d399' },
+                    { offset: 1, color: '#0ea5e9' }
                 ])
             },
             barWidth: '55%'
@@ -720,7 +899,7 @@ function switchTab(tabName) {
             btn.classList.add('active');
         }
     });
-    
+
     // 更新内容显示
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
@@ -728,6 +907,34 @@ function switchTab(tabName) {
             content.classList.add('active');
         }
     });
+
+    currentTab = tabName;
+    updateAssistantContext();
+}
+
+function updateAssistantContext() {
+    const contextEl = document.getElementById('assistant-context');
+    if (!contextEl) return;
+
+    if (!currentCourseId) {
+        contextEl.textContent = '当前未选择课程';
+        return;
+    }
+
+    const courseName = document.getElementById('course-name')?.textContent || '当前课程';
+    contextEl.textContent = `当前课程：${courseName} ｜ 分析视角：${getTabLabel(currentTab)}`;
+}
+
+function getTabLabel(tab) {
+    const map = {
+        overview: '概览',
+        student: '学生表现',
+        resources: '资源使用',
+        attendance: '考勤与课堂行为',
+        exams: '考试与成绩',
+        chat: 'AI 助手'
+    };
+    return map[tab] || '概览';
 }
 
 // 显示错误
