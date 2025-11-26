@@ -33,6 +33,26 @@ const defaultKpis = {
     warning: '--'
 };
 
+function renderInsightPanel(title, text) {
+    if (!text) return '';
+    const formatted = text.replace(/\n/g, '<br>');
+
+    return `
+        <div class="insight-box">
+            <div class="insight-box__header">
+                <span class="insight-icon">🔍</span>
+                <div>
+                    <p class="eyebrow">AI 路径洞察报告</p>
+                    <h5>${title}</h5>
+                </div>
+            </div>
+            <div class="insight-box__body">
+                <div class="insight-scroll">${formatted}</div>
+            </div>
+        </div>
+    `;
+}
+
 // API基础URL
 const API_BASE = window.location.origin;
 
@@ -592,25 +612,40 @@ async function analyzeLearningPath() {
         });
         
         const result = await response.json();
-        
+
         if (result.success) {
             const data = result.data;
-            let html = '';
-            
-            // 显示分析文本
-            if (data.analysis_text) {
-                html += `<div class="analysis-text">${data.analysis_text.replace(/\n/g, '<br>')}</div>`;
-            }
-            
-            // 显示常见路径详情
+            let html = renderInsightPanel('AI 路径洞察报告', data.analysis_text);
+
             if (data.common_paths && data.common_paths.length > 0) {
-                html += '<h4>详细路径分析:</h4><ul class="path-list">';
+                html += '<div class="path-card-list">';
                 data.common_paths.forEach((path, index) => {
-                    html += `<li><strong>路径 ${index + 1}:</strong> ${path.description}</li>`;
+                    const pathTitles = path.path_titles || [];
+                    const steps = pathTitles.map((title, idx) => {
+                        const safeTitle = title || '未知资源';
+                        return `<span class="step-chip">${safeTitle}</span>${idx < pathTitles.length - 1 ? '<span class="step-arrow">→</span>' : ''}`;
+                    }).join('');
+
+                    const examples = (path.examples || []).map(ex => ex.student_id?.slice(0, 8) || '学生').join('、');
+
+                    html += `
+                        <div class="path-card">
+                            <div class="path-card__header">
+                                <div class="path-index">#${index + 1}</div>
+                                <div class="path-meta">
+                                    <p class="path-title">典型路径</p>
+                                    <p class="path-sub">${path.frequency || 0} 人 · ${path.percentage || 0}%</p>
+                                </div>
+                            </div>
+                            <div class="path-steps">${steps || '<span class="muted">暂无资源节点</span>'}</div>
+                            ${path.description ? `<p class="path-desc">${path.description}</p>` : ''}
+                            ${examples ? `<p class="path-examples">示例学生：${examples}</p>` : ''}
+                        </div>
+                    `;
                 });
-                html += '</ul>';
+                html += '</div>';
             }
-            
+
             resultBox.innerHTML = html || '<p>暂无数据</p>';
         } else {
             resultBox.innerHTML = `分析失败: ${result.error}`;
@@ -637,32 +672,30 @@ async function analyzeStudentPerformance() {
         });
         
         const result = await response.json();
-        
+
         if (result.success) {
             const data = result.data;
-            let html = '';
-            
-            // 显示分析文本
-            if (data.analysis_text) {
-                html += `<div class="analysis-text">${data.analysis_text.replace(/\n/g, '<br>')}</div>`;
-            }
-            
-            // 显示优秀学生详情
+            let html = renderInsightPanel('AI 表现洞察', data.analysis_text);
+
             if (data.top_students && data.top_students.length > 0) {
-                html += '<h4>详细表现数据:</h4><ul class="performance-list">';
+                html += '<div class="stat-card-list">';
                 data.top_students.forEach((student, index) => {
-                    html += `<li><strong>第${index + 1}名:</strong> 学生ID ${student.student_id.substring(0, 8)}... `;
-                    if (student.avg_homework_score > 0) {
-                        html += `作业均分: ${student.avg_homework_score.toFixed(1)}分, `;
-                    }
-                    if (student.avg_exam_score > 0) {
-                        html += `考试均分: ${student.avg_exam_score.toFixed(1)}分`;
-                    }
-                    html += '</li>';
+                    const homework = student.avg_homework_score > 0 ? `${student.avg_homework_score.toFixed(1)} 分` : '—';
+                    const exam = student.avg_exam_score > 0 ? `${student.avg_exam_score.toFixed(1)} 分` : '—';
+
+                    html += `
+                        <div class="stat-card">
+                            <div class="stat-rank">NO.${index + 1}</div>
+                            <div class="stat-body">
+                                <p class="stat-title">学生 ${student.student_id.substring(0, 8)}...</p>
+                                <p class="stat-sub">作业均分 ${homework} ｜ 考试均分 ${exam}</p>
+                            </div>
+                        </div>
+                    `;
                 });
-                html += '</ul>';
+                html += '</div>';
             }
-            
+
             resultBox.innerHTML = html || '<p>暂无数据</p>';
         } else {
             resultBox.innerHTML = `分析失败: ${result.error}`;
@@ -697,65 +730,61 @@ async function analyzeResourceUsage() {
         
         if (result.success) {
             const data = result.data; // 这里拿到的是后端返回的字典
-            
-            // --- A. 构建深度报告 (新增部分) ---
-            let reportHtml = '';
-            if (data.analysis_text) {
-                // 使用 <pre> 标签保留后端的换行格式，并加点样式美化
-                reportHtml = `
-                    <div style="background: #f8f9fa; border-left: 5px solid #17a2b8; padding: 15px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <h4 style="margin-top: 0; color: #0c5460; border-bottom: 1px solid #ddd; padding-bottom: 10px;">📊 AI 深度洞察</h4>
-                        <pre style="white-space: pre-wrap; font-family: inherit; color: #333; margin: 0; font-size: 14px; line-height: 1.6;">${data.analysis_text}</pre>
-                    </div>
-                `;
-            }
+            let html = renderInsightPanel('AI 资源洞察', data.analysis_text);
 
-            // --- B. 构建基础统计 ---
-            // 尝试读取新加的字段 zero_view_count 等，如果没有则不显示
-            const zeroViewHtml = data.zero_view_count !== undefined 
-                ? `<span style="margin-left: 15px; color: #dc3545;">(⚠️ 僵尸资源: ${data.zero_view_count}个)</span>` 
+            const zeroViewBadge = data.zero_view_count !== undefined
+                ? `<span class="pill pill-warn">僵尸资源 ${data.zero_view_count}</span>`
                 : '';
 
-            const statsHtml = `
-                <div style="margin-bottom: 15px; font-size: 15px;">
-                    <p><strong>总资源数:</strong> ${data.total_resources}</p>
-                    <p><strong>已使用资源数:</strong> ${data.used_resources} ${zeroViewHtml}</p>
+            html += `
+                <div class="stat-card-list compact">
+                    <div class="stat-card">
+                        <div class="stat-rank">总量</div>
+                        <div class="stat-body">
+                            <p class="stat-title">资源总数</p>
+                            <p class="stat-sub">${data.total_resources ?? '--'}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-rank">使用</div>
+                        <div class="stat-body">
+                            <p class="stat-title">已被访问</p>
+                            <p class="stat-sub">${data.used_resources ?? '--'} ${zeroViewBadge}</p>
+                        </div>
+                    </div>
                 </div>
-                <h4 style="margin-top: 20px;">资源热度排行:</h4>
+                <h4 class="section-subtitle">资源热度排行</h4>
             `;
 
-            // --- C. 构建列表 ---
-            let listHtml = '<ul style="list-style: none; padding-left: 0;">';
-            
-            // 显示前 50 条，避免页面太长
             const listData = data.resource_usage ? data.resource_usage.slice(0, 50) : [];
-            
-            listData.forEach((item, index) => {
-                // 根据类型给个小图标
-                let icon = '📄';
-                if (item.type && item.type.includes('视频')) icon = '🎬';
-                if (item.type && item.type.includes('作业')) icon = '📝';
-                
-                // 给前三名加个高亮背景
-                const bgStyle = index < 3 ? 'background-color: #fff3cd;' : 'background-color: #fff;';
-                
-                listHtml += `
-                    <li style="${bgStyle} border: 1px solid #eee; margin-bottom: 8px; padding: 10px; border-radius: 4px;">
-                        <div style="font-weight: bold; color: #333;">${index + 1}. ${icon} ${item.title}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 4px;">
-                            类型: ${item.type || '未知'} | 
-                            浏览: <span style="color: #007bff; font-weight: bold;">${item.views}</span> | 
-                            下载: ${item.downloads || 0} | 
-                            使用人数: ${item.students_count} | 
-                            <span style="color: #d63384;">综合热度: ${item.popularity}</span>
-                        </div>
-                    </li>`;
-            });
-            listHtml += '</ul>';
+            if (listData.length) {
+                html += '<div class="resource-list">';
+                listData.forEach((item, index) => {
+                    let icon = '📄';
+                    if (item.type && item.type.includes('视频')) icon = '🎬';
+                    if (item.type && item.type.includes('作业')) icon = '📝';
 
-            // --- D. 渲染到页面 ---
-            resultBox.innerHTML = reportHtml + statsHtml + listHtml;
-            
+                    html += `
+                        <div class="resource-card ${index < 3 ? 'highlight' : ''}">
+                            <div class="resource-header">
+                                <div class="resource-rank">${index + 1}</div>
+                                <div class="resource-title">${icon} ${item.title || '未命名资源'}</div>
+                            </div>
+                            <div class="resource-meta">
+                                <span>类型：${item.type || '未知'}</span>
+                                <span>浏览：<strong>${item.views}</strong></span>
+                                <span>下载：${item.downloads || 0}</span>
+                                <span>使用人数：${item.students_count}</span>
+                                <span class="muted">热度：${item.popularity}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            resultBox.innerHTML = html || '<p>暂无数据</p>';
+
         } else {
             resultBox.innerHTML = `<div style="color: red;">分析失败: ${result.error}</div>`;
         }

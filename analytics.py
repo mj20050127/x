@@ -194,7 +194,8 @@ def analyze_learning_path(course: Course) -> Dict:
     学习路径分析
     """
     ctx = _build_context(course)
-    resources_map = course.resources
+    # 确保资源字典的键为字符串，避免 int/str 混用导致匹配失败
+    resources_map = {str(k): v for k, v in course.resources.items()}
     learning_paths: List[Dict] = []
     
     # 路径多样性统计
@@ -213,15 +214,15 @@ def analyze_learning_path(course: Course) -> Dict:
         path = []
         path_ids = []
         for v in sorted_videos[:10]:
-            res = resources_map.get(v.resource_id)
+            res = resources_map.get(str(v.resource_id))
             title = res.title if res else "未知资源"
             path.append({
-                "resource_id": v.resource_id,
+                "resource_id": str(v.resource_id),
                 "title": title,
                 "view_time": v.view_time,
                 "start_time": v.start_time,
             })
-            path_ids.append(v.resource_id)
+            path_ids.append(str(v.resource_id))
         
         if path:
             learning_paths.append({"student_id": stu.student_id, "path": path})
@@ -270,7 +271,7 @@ def analyze_learning_path(course: Course) -> Dict:
         for idx, (seq, freq) in enumerate(sorted_paths, start=1):
             titles = []
             for rid in seq:
-                res = resources_map.get(rid)
+                res = resources_map.get(str(rid))
                 titles.append(res.title if res else "未知资源")
             
             path_str = " → ".join(titles[:3])
