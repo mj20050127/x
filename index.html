@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI教学分析助手</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI教学分析助手</h1>
+            <p class="subtitle">基于水杉平台教学行为数据的智能分析系统</p>
+        </header>
+
+        <main>
+            <!-- 课程选择区域 -->
+            <section class="course-selector">
+                <div class="selector-header">
+                    <h2>课程导航</h2>
+                    <div class="search-box">
+                        <input type="text" id="course-search" placeholder="搜索课程名称..." />
+                        <button id="search-btn" class="search-icon-btn">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 19L13 13M15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 分类标签 -->
+                <div class="category-tabs">
+                    <button class="category-tab active" data-category="all">全部课程</button>
+                    <button class="category-tab" data-category="ai">人工智能</button>
+                    <button class="category-tab" data-category="programming">编程开发</button>
+                    <button class="category-tab" data-category="data">数据科学</button>
+                    <button class="category-tab" data-category="system">系统网络</button>
+                    <button class="category-tab" data-category="other">其他</button>
+                </div>
+                
+                <!-- 课程分类列表 -->
+                <div id="course-list-container" class="course-list-container">
+                    <div id="course-list" class="course-list"></div>
+                </div>
+            </section>
+
+            <!-- 课程详情区域 -->
+            <section id="course-detail" class="course-detail hidden">
+                <div class="course-header">
+                    <h2 id="course-name"></h2>
+                    <div class="course-stats" id="course-stats"></div>
+                </div>
+
+                <!-- 选项卡 -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="analysis">智能分析</button>
+                    <button class="tab-btn" data-tab="chat">AI助手</button>
+                </div>
+
+                <!-- 智能分析选项卡 -->
+                <div id="tab-analysis" class="tab-content active">
+                    <div class="analysis-section">
+                        <h3>学习路径分析</h3>
+                        <button id="analyze-path-btn" class="btn-primary">分析学习路径</button>
+                        <div id="path-analysis-result" class="result-box"></div>
+                    </div>
+                    <div class="analysis-section">
+                        <h3>学生表现分析</h3>
+                        <button id="analyze-performance-btn" class="btn-primary">分析学生表现</button>
+                        <div id="performance-analysis-result" class="result-box"></div>
+                    </div>
+                    <div class="analysis-section">
+                        <h3>资源使用分析</h3>
+                        <button id="analyze-resource-btn" class="btn-primary">分析资源使用</button>
+                        <div id="resource-analysis-result" class="result-box"></div>
+                    </div>
+                </div>
+
+                <!-- AI助手选项卡 -->
+                <div id="tab-chat" class="tab-content">
+                    <div class="chat-container">
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-box">
+                            <input type="text" id="chat-input" placeholder="输入您的问题，例如：这门课程有多少学生？第1周有哪些资源？" />
+                            <button id="send-btn" class="btn-primary">发送</button>
+                        </div>
+                        <div class="chat-suggestions">
+                            <h4>常见问题：</h4>
+                            <div class="suggestion-tags">
+                                <span class="suggestion-tag" data-question="这门课程有多少学生？">学生数量</span>
+                                <span class="suggestion-tag" data-question="有哪些学习资源？">资源列表</span>
+                                <span class="suggestion-tag" data-question="最受欢迎的资源是什么？">热门资源</span>
+                                <span class="suggestion-tag" data-question="第1周有哪些学习内容？">第1周内容</span>
+                                <span class="suggestion-tag" data-question="视频观看情况如何？">视频统计</span>
+                                <span class="suggestion-tag" data-question="作业提交情况如何？">作业统计</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>AI教学分析助手 | 基于水杉平台数据 | 华东师范大学数据学院</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

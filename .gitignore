@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Flask
+instance/
+.webassets-cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 环境变量和配置文件
+.env
+*.env.local
+
+# 数据文件
+SHUISHAN-CLAD/*.json
+cleaned_data/
+
+# 导出文件
+exports/*
+!exports/.gitkeep
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+
