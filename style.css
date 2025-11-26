@@ -23,18 +23,19 @@
 
 body {
     font-family: "Inter", "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.08), transparent 35%),
-        radial-gradient(circle at 70% 0%, rgba(16, 185, 129, 0.06), transparent 30%),
-        linear-gradient(135deg, #eef2ff, #f8fafc 45%, #f5f7fb);
+    background: #f2f4f8;
     color: var(--text-primary);
     min-height: 100vh;
-    padding: 24px;
+    padding: 28px 24px;
 }
 
 .app-shell {
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: minmax(0, 1fr) 330px;
     gap: 20px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: start;
 }
 
 .assistant-panel,
@@ -43,9 +44,6 @@ body {
     border: 1px solid var(--border);
     border-radius: 16px;
     box-shadow: var(--shadow);
-    align-self: start;
-    position: sticky;
-    top: 20px;
 }
 
 .workspace {
@@ -56,18 +54,24 @@ body {
 
 .hero {
     padding: 20px 24px;
-    background: linear-gradient(135deg, #e0ecff, #f3f8ff);
+    background: linear-gradient(135deg, #e7f0ff, #f8fbff);
     border-bottom: 1px solid var(--border);
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
+    gap: 16px;
 }
 
 .hero h2 {
     font-size: 24px;
     color: var(--primary-dark);
     margin-top: 4px;
+}
+
+.hero > div:first-child {
+    flex: 1 1 260px;
+    min-width: 260px;
 }
 
 .subtitle {
@@ -83,8 +87,11 @@ body {
 }
 
 main {
-    padding: 20px 24px 28px;
+    padding: 18px 22px 24px;
     overflow: visible;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .kpi-row {
@@ -135,7 +142,7 @@ main {
 
 .content-layout {
     display: grid;
-    grid-template-columns: 380px 1fr;
+    grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
     gap: 16px;
     align-items: start;
 }
@@ -150,8 +157,9 @@ main {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 20px;
+    padding: 18px;
     box-shadow: var(--shadow);
+    width: 100%;
 }
 
 .panel-header {
@@ -264,7 +272,6 @@ main {
     background: var(--bg-panel);
     border: 1px solid var(--border);
     color: var(--text-primary);
-    color: var(--text-secondary);
     padding: 10px 12px;
     border-radius: 10px;
 }
@@ -538,6 +545,8 @@ main {
     position: relative;
     top: auto;
     height: auto;
+    position: sticky;
+    top: 24px;
 }
 
 .assistant-header {
@@ -567,7 +576,7 @@ main {
     gap: 10px;
     flex: 1;
     background: var(--bg-panel);
-    max-height: 560px;
+    max-height: calc(100vh - 240px);
     overflow-y: auto;
     padding-right: 4px;
 }
@@ -607,13 +616,18 @@ main {
 .message.assistant .message-bubble {
     background: rgba(15, 23, 42, 0.02);
     border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    overflow: auto;
+    font-family: "JetBrains Mono", "SFMono-Regular", monospace;
+    color: var(--text-primary);
 }
 
 .message-bubble h1,
 .message-bubble h2,
 .message-bubble h3 {
     margin: 6px 0 4px;
-    color: var(--primary-dark);
+    color: #fff;
 }
 
 .message-bubble p,
@@ -649,7 +663,7 @@ main {
 .message-bubble h2,
 .message-bubble h3 {
     margin: 6px 0 4px;
-    color: #fff;
+    color: var(--primary-dark);
 }
 
 .message-bubble p,
