@@ -3,6 +3,27 @@ let currentCourseId = null;
 let currentTab = 'overview';
 let charts = {};
 
+function getChartInstance(key, elementId) {
+    if (typeof echarts === 'undefined') return null;
+    const container = document.getElementById(elementId);
+    if (!container) {
+        charts[key] = null;
+        return null;
+    }
+
+    const existing = charts[key];
+    if (existing && existing.getDom && existing.getDom() === container) {
+        return existing;
+    }
+
+    if (existing && existing.dispose) {
+        existing.dispose();
+    }
+
+    charts[key] = echarts.init(container);
+    return charts[key];
+}
+
 const defaultKpis = {
     total: '--',
     resources: '--',
@@ -386,8 +407,10 @@ function setKpiValue(id, value) {
 
 // 构建与更新 ECharts
 function updateCharts(analysis = {}) {
+    const performanceList = analysis.student_details || analysis.top_students || [];
+
     const scatterData = analysis.performance_points
-        || (analysis.top_students ? analysis.top_students.map((student, index) => [
+        || (performanceList.length ? performanceList.map((student, index) => [
             index + 1,
             student.avg_exam_score || student.avg_homework_score || 0,
             student.student_id || `学生${index + 1}`
@@ -437,12 +460,8 @@ function updateCharts(analysis = {}) {
 }
 
 function renderScatterChart(data) {
-    if (typeof echarts === 'undefined') return;
-    const container = document.getElementById('scatter-chart');
-    if (!container) return;
-
-    const instance = charts.scatter || echarts.init(container);
-    charts.scatter = instance;
+    const instance = getChartInstance('scatter', 'scatter-chart');
+    if (!instance) return;
 
     instance.setOption({
         backgroundColor: 'transparent',
@@ -478,12 +497,8 @@ function renderScatterChart(data) {
 }
 
 function renderBarChart(data) {
-    if (typeof echarts === 'undefined') return;
-    const container = document.getElementById('bar-chart');
-    if (!container) return;
-
-    const instance = charts.bar || echarts.init(container);
-    charts.bar = instance;
+    const instance = getChartInstance('bar', 'bar-chart');
+    if (!instance) return;
 
     instance.setOption({
         backgroundColor: 'transparent',
@@ -514,12 +529,8 @@ function renderBarChart(data) {
 }
 
 function renderResourcePie(data) {
-    if (typeof echarts === 'undefined') return;
-    const container = document.getElementById('resource-pie');
-    if (!container) return;
-
-    const instance = charts.resourcePie || echarts.init(container);
-    charts.resourcePie = instance;
+    const instance = getChartInstance('resourcePie', 'resource-pie');
+    if (!instance) return;
 
     instance.setOption({
         backgroundColor: 'transparent',
@@ -546,12 +557,8 @@ function renderResourcePie(data) {
 }
 
 function renderBehaviorChart(stats) {
-    if (typeof echarts === 'undefined') return;
-    const container = document.getElementById('behavior-chart');
-    if (!container) return;
-
-    const instance = charts.behavior || echarts.init(container);
-    charts.behavior = instance;
+    const instance = getChartInstance('behavior', 'behavior-chart');
+    if (!instance) return;
 
     const categories = stats.categories || (Array.isArray(stats) ? stats.map(item => item.name || '指标') : []);
     const values = stats.values || (Array.isArray(stats) ? stats.map(item => item.value || 0) : []);
@@ -863,13 +870,16 @@ function addMessage(type, content, isLoading = false) {
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
-    
+
     if (isLoading) {
         bubble.innerHTML = '<div class="loading"></div> <span>' + content + '</span>';
     } else {
-        // 支持换行（保留\n）
-        const contentWithBreaks = content.replace(/\n/g, '<br>');
-        bubble.innerHTML = contentWithBreaks;
+        // 支持 Markdown 与换行
+        if (window.marked) {
+            bubble.innerHTML = marked.parse(content);
+        } else {
+            bubble.innerHTML = content.replace(/\n/g, '<br>');
+        }
     }
     
     messageDiv.appendChild(bubble);
