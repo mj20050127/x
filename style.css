@@ -147,6 +147,10 @@ main {
     align-items: start;
 }
 
+.content-layout.single-column {
+    grid-template-columns: 1fr;
+}
+
 .content-grid {
     display: grid;
     grid-template-columns: 1fr;

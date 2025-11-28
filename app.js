@@ -1075,6 +1075,7 @@ function switchView(view) {
     const courseDetail = document.getElementById('course-detail');
     const settingsPanel = document.getElementById('settings-panel');
     const contactPanel = document.getElementById('contact-panel');
+    const contentLayout = document.querySelector('.content-layout');
 
     [moduleCourses, courseDetail, settingsPanel, contactPanel].forEach(el => {
         if (el) el.classList.add('hidden');
@@ -1085,6 +1086,7 @@ function switchView(view) {
 
     if (view === 'course-center') {
         if (moduleCourses) moduleCourses.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.remove('single-column');
         if (heroTitle) heroTitle.textContent = '课程中心';
         if (heroSubtitle) heroSubtitle.textContent = '先从课程列表中选择一门课程';
     } else if (view === 'analysis') {
@@ -1095,6 +1097,7 @@ function switchView(view) {
             return;
         }
         if (courseDetail) courseDetail.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
         if (heroTitle) heroTitle.textContent = '课程深度分析';
         if (heroSubtitle) {
             const titleEl = document.getElementById('course-name');
@@ -1103,10 +1106,12 @@ function switchView(view) {
         }
     } else if (view === 'settings') {
         if (settingsPanel) settingsPanel.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
         if (heroTitle) heroTitle.textContent = '系统设置';
         if (heroSubtitle) heroSubtitle.textContent = '配置教学分析参数与偏好';
     } else if (view === 'contact') {
         if (contactPanel) contactPanel.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
         if (heroTitle) heroTitle.textContent = '联系我们';
         if (heroSubtitle) heroSubtitle.textContent = '有任何需求或反馈，欢迎联系教研团队';
     }
