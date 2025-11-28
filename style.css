@@ -311,7 +311,7 @@ main {
 }
 
 .course-list-container {
-    max-height: 640px;
+    max-height: 1400px;
     overflow-y: auto;
     padding-right: 4px;
 }
@@ -743,7 +743,7 @@ main {
     gap: 12px;
     position: relative;
     top: auto;
-    height: auto;
+    height: calc(100vh - 40px);
     position: sticky;
     top: 24px;
 }
