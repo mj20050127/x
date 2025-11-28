@@ -912,16 +912,34 @@ function clearLoadingMessage() {
 function addMessage(type, content, isLoading = false) {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return null;
-    
+
     // 确保唯一ID（使用时间戳+随机数）
     const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.id = messageId;
-    
+
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
+
+    // 智能判断是否为“报告类”长答案（例如学生成绩报告 / 课堂分析）
+    const isReportLike =
+        !isLoading &&
+        type === 'assistant' &&
+        (
+            content.includes('成绩分析') ||
+            content.includes('成绩报告') ||
+            content.includes('学习路径') ||
+            content.includes('分析报告') ||
+            content.includes('【学生成绩分析报告】') ||
+            content.split('\n').length >= 6  // 行数多时，也视为报告
+        );
+
+    if (isReportLike) {
+        bubble.classList.add('report-bubble');
+        messageDiv.classList.add('is-report');
+    }
 
     if (isLoading) {
         bubble.innerHTML = '<div class="loading"></div> <span>' + content + '</span>';
@@ -933,22 +951,26 @@ function addMessage(type, content, isLoading = false) {
             bubble.innerHTML = content.replace(/\n/g, '<br>');
         }
     }
-    
+
     messageDiv.appendChild(bubble);
-    
+
     if (!isLoading) {
         const time = document.createElement('div');
         time.className = 'message-time';
-        time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        time.textContent = new Date().toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
         messageDiv.appendChild(time);
     }
-    
+
     messagesContainer.appendChild(messageDiv);
     // 滚动到底部
     setTimeout(() => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }, 10);
-    
+
     return messageId;
 }
 
