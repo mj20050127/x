@@ -2,6 +2,7 @@
 let currentCourseId = null;
 let currentTab = 'overview';
 let charts = {};
+let currentView = 'course-center';   // 当前视图：课程中心 / 深度分析 / 设置 / 联系
 
 function getChartInstance(key, elementId) {
     if (typeof echarts === 'undefined') return null;
@@ -60,6 +61,8 @@ const API_BASE = window.location.origin;
 document.addEventListener('DOMContentLoaded', () => {
     loadCourses();
     setupEventListeners();
+    switchView('course-center');
+    setActiveNav('course-center');
     window.addEventListener('resize', () => {
         Object.values(charts).forEach(chart => chart && chart.resize());
     });
@@ -154,6 +157,31 @@ function setupEventListeners() {
         currentSort = e.target.value;
         displayCourses(allCourses, currentCategory);
     });
+
+    // 左侧导航点击
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const view = item.dataset.view;
+            if (!view) return;
+
+            if (view === 'analysis' && !currentCourseId) {
+                alert('请先在「课程中心」选择一门课程，再查看深度分析。');
+                return;
+            }
+
+            switchView(view);
+            setActiveNav(view);
+        });
+    });
+
+    // 返回课程中心按钮
+    const backBtn = document.getElementById('back-to-course-center');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            switchView('course-center');
+            setActiveNav('course-center');
+        });
+    }
 }
 
 // 加载课程列表
@@ -282,15 +310,22 @@ function displayCourses(courses, category = 'all') {
 // 加载课程详情
 async function loadCourseDetail(courseId) {
     currentCourseId = courseId;
-    
+
     try {
         const response = await fetch(`${API_BASE}/api/course/${courseId}`);
         const result = await response.json();
-        
+
         if (result.success) {
             displayCourseDetail(result.data);
-            document.getElementById('course-detail').classList.remove('hidden');
-            document.getElementById('course-detail').scrollIntoView({ behavior: 'smooth' });
+
+            // 切换到深度分析视图
+            switchView('analysis');
+            setActiveNav('analysis');
+
+            const detailEl = document.getElementById('course-detail');
+            if (detailEl) {
+                detailEl.scrollIntoView({ behavior: 'smooth' });
+            }
         } else {
             showError('加载课程详情失败: ' + result.error);
         }
@@ -912,16 +947,34 @@ function clearLoadingMessage() {
 function addMessage(type, content, isLoading = false) {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return null;
-    
+
     // 确保唯一ID（使用时间戳+随机数）
     const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.id = messageId;
-    
+
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
+
+    // 智能判断是否为“报告类”长答案（例如学生成绩报告 / 课堂分析）
+    const isReportLike =
+        !isLoading &&
+        type === 'assistant' &&
+        (
+            content.includes('成绩分析') ||
+            content.includes('成绩报告') ||
+            content.includes('学习路径') ||
+            content.includes('分析报告') ||
+            content.includes('【学生成绩分析报告】') ||
+            content.split('\n').length >= 6  // 行数多时，也视为报告
+        );
+
+    if (isReportLike) {
+        bubble.classList.add('report-bubble');
+        messageDiv.classList.add('is-report');
+    }
 
     if (isLoading) {
         bubble.innerHTML = '<div class="loading"></div> <span>' + content + '</span>';
@@ -933,22 +986,26 @@ function addMessage(type, content, isLoading = false) {
             bubble.innerHTML = content.replace(/\n/g, '<br>');
         }
     }
-    
+
     messageDiv.appendChild(bubble);
-    
+
     if (!isLoading) {
         const time = document.createElement('div');
         time.className = 'message-time';
-        time.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        time.textContent = new Date().toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
         messageDiv.appendChild(time);
     }
-    
+
     messagesContainer.appendChild(messageDiv);
     // 滚动到底部
     setTimeout(() => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }, 10);
-    
+
     return messageId;
 }
 
@@ -997,6 +1054,67 @@ function getTabLabel(tab) {
         chat: 'AI 助手'
     };
     return map[tab] || '概览';
+}
+
+// ===== 导航视图切换 =====
+
+function setActiveNav(view) {
+    const items = document.querySelectorAll('.nav-item');
+    items.forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function switchView(view) {
+    currentView = view;
+    const moduleCourses = document.getElementById('module-courses');
+    const courseDetail = document.getElementById('course-detail');
+    const settingsPanel = document.getElementById('settings-panel');
+    const contactPanel = document.getElementById('contact-panel');
+    const contentLayout = document.querySelector('.content-layout');
+
+    [moduleCourses, courseDetail, settingsPanel, contactPanel].forEach(el => {
+        if (el) el.classList.add('hidden');
+    });
+
+    const heroTitle = document.querySelector('.hero h2');
+    const heroSubtitle = document.querySelector('.hero .subtitle');
+
+    if (view === 'course-center') {
+        if (moduleCourses) moduleCourses.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.remove('single-column');
+        if (heroTitle) heroTitle.textContent = '课程中心';
+        if (heroSubtitle) heroSubtitle.textContent = '先从课程列表中选择一门课程';
+    } else if (view === 'analysis') {
+        if (!currentCourseId) {
+            alert('请先在「课程中心」选择一门课程');
+            setActiveNav('course-center');
+            if (moduleCourses) moduleCourses.classList.remove('hidden');
+            return;
+        }
+        if (courseDetail) courseDetail.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
+        if (heroTitle) heroTitle.textContent = '课程深度分析';
+        if (heroSubtitle) {
+            const titleEl = document.getElementById('course-name');
+            const title = titleEl ? titleEl.textContent : '';
+            heroSubtitle.textContent = title ? `当前课程：${title}` : '基于教学行为数据的智能分析';
+        }
+    } else if (view === 'settings') {
+        if (settingsPanel) settingsPanel.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
+        if (heroTitle) heroTitle.textContent = '系统设置';
+        if (heroSubtitle) heroSubtitle.textContent = '配置教学分析参数与偏好';
+    } else if (view === 'contact') {
+        if (contactPanel) contactPanel.classList.remove('hidden');
+        if (contentLayout) contentLayout.classList.add('single-column');
+        if (heroTitle) heroTitle.textContent = '联系我们';
+        if (heroSubtitle) heroSubtitle.textContent = '有任何需求或反馈，欢迎联系教研团队';
+    }
 }
 
 // 显示错误

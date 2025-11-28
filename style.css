@@ -147,6 +147,10 @@ main {
     align-items: start;
 }
 
+.content-layout.single-column {
+    grid-template-columns: 1fr;
+}
+
 .content-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -907,4 +911,318 @@ main {
     .content-layout { grid-template-columns: 1fr; }
     .kpi-row { grid-template-columns: 1fr; }
     .chart-area { height: 220px; }
+}
+
+/* ==== 聊天区域高级主题（追加在文件末尾即可） ==== */
+
+/* 整个聊天容器：加一点渐变背景，让右侧面板更吸睛 */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    background:
+        radial-gradient(circle at 0 0, rgba(37, 99, 235, 0.10), transparent 55%),
+        var(--bg-panel);
+    max-height: calc(100vh - 140px);
+    padding: 12px 10px 10px;
+    border-radius: 16px;
+}
+
+/* 消息列表：内层柔和卡片，间距稍微拉开一点 */
+.chat-messages {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.02);
+    border-radius: 14px;
+    padding: 12px 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 每条消息 */
+.message {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* 基础气泡样式 */
+.message-bubble {
+    position: relative;
+    padding: 12px 14px;
+    border-radius: 14px;
+    max-width: 100%;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* 用户消息：右侧高亮渐变气泡，老师一看就知道是“我问的” */
+.message.user .message-bubble {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #eff6ff;
+    border: none;
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
+    align-self: flex-end;
+}
+
+.message.user .message-bubble p,
+.message.user .message-bubble span {
+    color: inherit;
+}
+
+/* 普通 AI 回答：干净白卡片 */
+.message.assistant .message-bubble {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+}
+
+/* “报告类”回答：自动套用大号报告卡片皮肤 */
+.message.assistant .message-bubble.report-bubble {
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(37, 99, 235, 0.45);
+    box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.18),
+        0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+}
+
+/* 报告卡片顶部增加一个“小标题 + 图标”，老师一看就知道是正式报告 */
+.message.assistant .report-bubble::before {
+    content: "📑 AI 成绩 / 学习报告";
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+/* 报告的第一行（一般是“【学生成绩分析报告】”）加粗放大 */
+.report-bubble p:first-child,
+.report-bubble h1:first-child,
+.report-bubble h2:first-child {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* 聊天气泡内部的文字样式，延续你原来的风格 */
+.message-bubble h1,
+.message-bubble h2,
+.message-bubble h3 {
+    margin: 6px 0 4px;
+    color: var(--primary-dark);
+}
+
+.message-bubble p,
+.message-bubble ul,
+.message-bubble ol {
+    margin: 6px 0;
+    color: var(--text-primary);
+}
+
+.message-bubble ul,
+.message-bubble ol {
+    padding-left: 20px;
+}
+
+/* 时间戳稍微弱化一点 */
+.message-time {
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 0 4px;
+}
+
+/* ========== 布局：左侧导航 + 中间工作区 + 右侧 AI ========== */
+
+.app-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 330px;
+    gap: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+    align-items: start;
+}
+
+/* 左侧导航栏 */
+
+.nav-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100%;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+    color: #eff6ff;
+}
+
+.nav-logo-text .nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.nav-logo-text .nav-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item .nav-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.nav-item:hover {
+    background: rgba(37, 99, 235, 0.06);
+    color: var(--primary-dark);
+}
+
+.nav-item.active {
+    border-color: rgba(37, 99, 235, 0.6);
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--primary-dark);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+}
+
+.nav-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.nav-version {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* 返回课程中心按钮样式 */
+
+.course-head-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.back-btn {
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.back-btn::before {
+    content: "←";
+    font-size: 14px;
+}
+
+.back-btn:hover {
+    background: rgba(37, 99, 235, 0.08);
+    transform: translateX(-1px);
+}
+
+/* 设置 / 联系我们 面板的简单排版 */
+
+.settings-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.contact-box p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* 通用隐藏类（确保 .hidden 生效） */
+.hidden {
+    display: none !important;
+}
+
+/* 响应式：中屏只保留左侧导航 + 中间内容，隐藏右侧 AI */
+@media (max-width: 1200px) {
+    .app-shell {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+    .assistant-panel {
+        display: none;
+    }
+}
+
+/* 小屏：导航栏收缩到顶部一行 */
+@media (max-width: 768px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+    .nav-panel {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .nav-menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
 }
