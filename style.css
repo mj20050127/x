@@ -1035,3 +1035,190 @@ main {
     font-size: 12px;
     padding: 0 4px;
 }
+
+/* ========== 布局：左侧导航 + 中间工作区 + 右侧 AI ========== */
+
+.app-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 330px;
+    gap: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+    align-items: start;
+}
+
+/* 左侧导航栏 */
+
+.nav-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100%;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+    color: #eff6ff;
+}
+
+.nav-logo-text .nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.nav-logo-text .nav-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-item .nav-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.nav-item:hover {
+    background: rgba(37, 99, 235, 0.06);
+    color: var(--primary-dark);
+}
+
+.nav-item.active {
+    border-color: rgba(37, 99, 235, 0.6);
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--primary-dark);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+}
+
+.nav-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.nav-version {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+/* 返回课程中心按钮样式 */
+
+.course-head-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.back-btn {
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.back-btn::before {
+    content: "←";
+    font-size: 14px;
+}
+
+.back-btn:hover {
+    background: rgba(37, 99, 235, 0.08);
+    transform: translateX(-1px);
+}
+
+/* 设置 / 联系我们 面板的简单排版 */
+
+.settings-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.contact-box p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* 通用隐藏类（确保 .hidden 生效） */
+.hidden {
+    display: none !important;
+}
+
+/* 响应式：中屏只保留左侧导航 + 中间内容，隐藏右侧 AI */
+@media (max-width: 1200px) {
+    .app-shell {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+    .assistant-panel {
+        display: none;
+    }
+}
+
+/* 小屏：导航栏收缩到顶部一行 */
+@media (max-width: 768px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+    .nav-panel {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .nav-menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+}
